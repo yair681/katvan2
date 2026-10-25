@@ -1,0 +1,594 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
+<meta name="theme-color" content="#ffffff">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="כתבן 2.0">
+<title>כתבן 2.0</title>
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<script>
+  /* phone layout is decided before the first paint (same query as js/app.js) */
+  (function () {
+    try { if (window.matchMedia && matchMedia('(max-width: 760px), (max-height: 520px) and (max-width: 1100px)').matches) document.documentElement.classList.add('m-ui'); } catch (e) { /* ignore */ }
+    /* the manifest only exists over http(s); on file:// it would just log an error */
+    if (/^https?:$/.test(location.protocol)) {
+      var l = document.createElement('link'); l.rel = 'manifest'; l.href = 'manifest.json'; document.head.appendChild(l);
+    }
+  })();
+</script>
+<link rel="stylesheet" href="css/fonts.css">
+<link rel="stylesheet" href="css/app.css">
+<style id="print-page-style"></style>
+</head>
+<body>
+<div id="app">
+
+  <!-- Title bar -->
+  <header class="titlebar">
+    <div class="tb-start">
+      <button class="icon-btn m-only" data-cmd="mDrawer" aria-label="תפריט" title="תפריט"><i data-i="menu"></i></button>
+      <div class="brand" aria-hidden="true"><i data-i="feather"></i></div>
+      <span class="brand-name">כתבן 2.0</span>
+      <input id="docTitle" class="doc-title" type="text" spellcheck="false" aria-label="שם המסמך" maxlength="80">
+      <span id="saveState" class="save-state" aria-live="polite"></span>
+    </div>
+    <div class="tb-end">
+      <button class="icon-btn" data-cmd="undo" title="ביטול (Ctrl+Z)" aria-label="ביטול"><i data-i="undo"></i></button>
+      <button class="icon-btn" data-cmd="redo" title="ביצוע שוב (Ctrl+Y)" aria-label="ביצוע שוב"><i data-i="redo"></i></button>
+      <span class="tb-sep"></span>
+      <button class="icon-btn dictate-btn" data-cmd="dictate" title="הכתבה קולית. דורשת חיבור לאינטרנט: הדפדפן שולח את הקול לשרת לזיהוי." aria-label="הכתבה קולית"><i data-i="mic"></i></button>
+      <button class="icon-btn" data-cmd="speak" title="הקראה מהסמן או מהטקסט המסומן" aria-label="הקראה"><i data-i="speaker"></i></button>
+      <span class="tb-sep"></span>
+      <button class="icon-btn" data-cmd="toggleTheme" title="מצב כהה / בהיר" aria-label="מצב כהה או בהיר"><i data-i="moon" class="only-light"></i><i data-i="sun" class="only-dark"></i></button>
+      <button class="primary-btn" data-cmd="saveQuick" title="שמירה (Ctrl+S)"><i data-i="save"></i><span>שמירה</span></button>
+    </div>
+  </header>
+
+  <!-- Ribbon (on phones: the "more tools" bottom sheet) -->
+  <div class="ribbon-dock" id="ribbonDock">
+  <div class="m-sheet-head m-only">
+    <span class="m-sheet-grip" aria-hidden="true"></span>
+    <span class="m-sheet-title">כל הכלים</span>
+    <button class="icon-btn" data-cmd="mMore" aria-label="סגירה" title="סגירה"><i data-i="x"></i></button>
+  </div>
+  <!-- Ribbon tabs -->
+  <nav class="ribbon-tabs" role="tablist">
+    <button class="rtab rtab-file" data-cmd="openBackstage">קובץ</button>
+    <button class="rtab active" data-tab="home" role="tab">בית</button>
+    <button class="rtab" data-tab="insert" role="tab">הוספה</button>
+    <button class="rtab" data-tab="study" role="tab">לימודים</button>
+    <button class="rtab" data-tab="aids" role="tab">עזרים</button>
+    <button class="rtab" data-tab="layout" role="tab">פריסה</button>
+    <button class="rtab" data-tab="view" role="tab">תצוגה</button>
+    <button class="rtab rtab-ctx" data-tab="table" role="tab" hidden>טבלה</button>
+    <button class="rtab rtab-ctx" data-tab="image" role="tab" hidden>תמונה</button>
+    <span class="rtab-spacer"></span>
+    <button class="rtab-collapse icon-btn" data-cmd="toggleRibbon" title="כיווץ סרגל הכלים" aria-label="כיווץ סרגל הכלים"><i data-i="chevronUp"></i></button>
+  </nav>
+
+  <!-- Ribbon panels -->
+  <section class="ribbon" id="ribbon">
+
+    <!-- HOME -->
+    <div class="rpanel active" data-panel="home">
+      <div class="rgroup">
+        <div class="rgroup-body">
+          <div class="rcol">
+            <div class="rrow">
+              <select id="fontFamily" class="rselect font-select" title="גופן" aria-label="גופן"></select>
+              <div class="combo" title="גודל גופן">
+                <input id="fontSize" class="rinput size-input" type="text" inputmode="decimal" aria-label="גודל גופן" autocomplete="off">
+                <button class="combo-btn" data-pop="sizes" aria-label="רשימת גדלים"><i data-i="chevronDown"></i></button>
+              </div>
+              <button class="tbtn" data-cmd="growFont" title="הגדלת גופן (Ctrl+Shift+>)" aria-label="הגדלת גופן"><i data-i="fontGrow"></i></button>
+              <button class="tbtn" data-cmd="shrinkFont" title="הקטנת גופן (Ctrl+Shift+<)" aria-label="הקטנת גופן"><i data-i="fontShrink"></i></button>
+            </div>
+            <div class="rrow">
+              <button class="tbtn" data-cmd="bold" data-state="bold" title="מודגש (Ctrl+B)" aria-label="מודגש"><i data-i="bold"></i></button>
+              <button class="tbtn" data-cmd="italic" data-state="italic" title="נטוי (Ctrl+I)" aria-label="נטוי"><i data-i="italic"></i></button>
+              <button class="tbtn" data-cmd="underline" data-state="underline" title="קו תחתון (Ctrl+U)" aria-label="קו תחתון"><i data-i="underline"></i></button>
+              <button class="tbtn" data-cmd="strikeThrough" data-state="strikeThrough" title="קו חוצה" aria-label="קו חוצה"><i data-i="strike"></i></button>
+              <button class="tbtn" data-cmd="superscript" data-state="superscript" title="כתב עילי" aria-label="כתב עילי"><i data-i="superscript"></i></button>
+              <button class="tbtn" data-cmd="subscript" data-state="subscript" title="כתב תחתי" aria-label="כתב תחתי"><i data-i="subscript"></i></button>
+              <span class="split">
+                <button class="tbtn split-main" data-cmd="applyTextColor" title="צבע גופן" aria-label="צבע גופן"><i data-i="textColor"></i><span class="color-bar" id="textColorBar"></span></button>
+                <button class="tbtn split-arrow" data-pop="textColor" aria-label="בחירת צבע גופן"><i data-i="chevronDown"></i></button>
+              </span>
+              <span class="split">
+                <button class="tbtn split-main" data-cmd="applyHighlight" title="צבע סימון" aria-label="צבע סימון"><i data-i="highlighter"></i><span class="color-bar" id="highlightBar"></span></button>
+                <button class="tbtn split-arrow" data-pop="highlight" aria-label="בחירת צבע סימון"><i data-i="chevronDown"></i></button>
+              </span>
+              <button class="tbtn" data-cmd="clearFormat" title="ניקוי עיצוב" aria-label="ניקוי עיצוב"><i data-i="eraser"></i></button>
+            </div>
+          </div>
+        </div>
+        <div class="rgroup-label">גופן</div>
+      </div>
+
+      <div class="rgroup">
+        <div class="rgroup-body">
+          <div class="rcol">
+            <div class="rrow">
+              <button class="tbtn" data-cmd="bulletList" data-state="insertUnorderedList" title="תבליטים" aria-label="תבליטים"><i data-i="listBullet"></i></button>
+              <button class="tbtn" data-cmd="numberList" data-state="insertOrderedList" title="מספור" aria-label="מספור"><i data-i="listNumber"></i></button>
+              <button class="tbtn" data-cmd="outdent" title="הקטנת כניסה" aria-label="הקטנת כניסה"><i data-i="outdent"></i></button>
+              <button class="tbtn" data-cmd="indent" title="הגדלת כניסה" aria-label="הגדלת כניסה"><i data-i="indent"></i></button>
+              <span class="rsep"></span>
+              <button class="tbtn" data-cmd="dirRtl" data-state="dir-rtl" title="פסקה מימין לשמאל (Ctrl+Shift ימני)" aria-label="פסקה מימין לשמאל"><i data-i="pilcrowRtl"></i></button>
+              <button class="tbtn" data-cmd="dirLtr" data-state="dir-ltr" title="פסקה משמאל לימין (Ctrl+Shift שמאלי)" aria-label="פסקה משמאל לימין"><i data-i="pilcrowLtr"></i></button>
+            </div>
+            <div class="rrow">
+              <button class="tbtn" data-cmd="alignRight" data-state="align-right" title="יישור לימין" aria-label="יישור לימין"><i data-i="alignRight"></i></button>
+              <button class="tbtn" data-cmd="alignCenter" data-state="align-center" title="מרכוז (Ctrl+E)" aria-label="מרכוז"><i data-i="alignCenter"></i></button>
+              <button class="tbtn" data-cmd="alignLeft" data-state="align-left" title="יישור לשמאל" aria-label="יישור לשמאל"><i data-i="alignLeft"></i></button>
+              <button class="tbtn" data-cmd="alignJustify" data-state="align-justify" title="יישור לשני הצדדים (Ctrl+J)" aria-label="יישור לשני הצדדים"><i data-i="alignJustify"></i></button>
+              <span class="rsep"></span>
+              <button class="tbtn tbtn-wide" data-pop="lineSpacing" title="ריווח שורות" aria-label="ריווח שורות"><i data-i="lineSpacing"></i><i data-i="chevronDown" class="mini"></i></button>
+            </div>
+          </div>
+        </div>
+        <div class="rgroup-label">פסקה</div>
+      </div>
+
+      <div class="rgroup">
+        <div class="rgroup-body">
+          <div class="styles-gallery" id="stylesGallery">
+            <button class="style-card" data-block="p" data-state="block-p"><span class="sc-prev sc-normal">אבג</span><span class="sc-name">רגיל</span></button>
+            <button class="style-card" data-block="h1" data-state="block-h1"><span class="sc-prev sc-h1">אבג</span><span class="sc-name">כותרת 1</span></button>
+            <button class="style-card" data-block="h2" data-state="block-h2"><span class="sc-prev sc-h2">אבג</span><span class="sc-name">כותרת 2</span></button>
+            <button class="style-card" data-block="h3" data-state="block-h3"><span class="sc-prev sc-h3">אבג</span><span class="sc-name">כותרת 3</span></button>
+            <button class="style-card" data-block="blockquote" data-state="block-blockquote"><span class="sc-prev sc-quote">אבג</span><span class="sc-name">ציטוט</span></button>
+          </div>
+        </div>
+        <div class="rgroup-label">סגנונות</div>
+      </div>
+
+      <div class="rgroup">
+        <div class="rgroup-body">
+          <div class="rcol">
+            <button class="tbtn tbtn-label" data-cmd="find" title="חיפוש (Ctrl+F)"><i data-i="search"></i><span>חיפוש</span></button>
+            <button class="tbtn tbtn-label" data-cmd="replace" title="החלפה (Ctrl+H)"><i data-i="replace"></i><span>החלפה</span></button>
+          </div>
+        </div>
+        <div class="rgroup-label">עריכה</div>
+      </div>
+    </div>
+
+    <!-- INSERT -->
+    <div class="rpanel" data-panel="insert">
+      <div class="rgroup">
+        <div class="rgroup-body">
+          <button class="bigbtn" data-pop="tableGrid"><i data-i="table"></i><span>טבלה</span></button>
+          <button class="bigbtn" data-cmd="insertImage"><i data-i="image"></i><span>תמונה</span></button>
+        </div>
+        <div class="rgroup-label">אובייקטים</div>
+      </div>
+      <div class="rgroup">
+        <div class="rgroup-body">
+          <button class="bigbtn" data-cmd="insertLink" title="קישור (Ctrl+K)"><i data-i="link"></i><span>קישור</span></button>
+          <button class="bigbtn" data-pop="symbols"><i data-i="omega"></i><span>סמל</span></button>
+          <button class="bigbtn" data-pop="dates"><i data-i="calendar"></i><span>תאריך</span></button>
+        </div>
+        <div class="rgroup-label">טקסט</div>
+      </div>
+      <div class="rgroup">
+        <div class="rgroup-body">
+          <button class="bigbtn" data-cmd="insertHr"><i data-i="minus"></i><span>קו מפריד</span></button>
+          <button class="bigbtn" data-cmd="insertPageBreak" title="מעבר עמוד (Ctrl+Enter)"><i data-i="pageBreak"></i><span>מעבר עמוד</span></button>
+        </div>
+        <div class="rgroup-label">עמודים</div>
+      </div>
+    </div>
+
+    <!-- STUDY (math + school) -->
+    <div class="rpanel" data-panel="study">
+      <div class="rgroup">
+        <div class="rgroup-body">
+          <button class="bigbtn" data-cmd="mathSpan" data-xstate="math" title="נוסחה בתוך השורה (Ctrl+M). בתוכה x^2 הופך ל-x², ‏sqrt ל-√, ‏>= ל-≥"><i data-i="sigma"></i><span>נוסחה</span></button>
+          <button class="bigbtn" data-cmd="equation" title="עורך משוואות: שברים, שורשים וחזקות"><i data-i="fraction"></i><span>משוואה</span></button>
+          <button class="bigbtn" data-cmd="solution" title="שורות פתרון שמיושרות לפי סימן השוויון"><i data-i="steps"></i><span>שלבי פתרון</span></button>
+          <button class="bigbtn" data-cmd="system" title="מערכת משוואות עם סוגר מסולסל"><i data-i="brace"></i><span>מערכת משוואות</span></button>
+          <button class="bigbtn" data-cmd="graph" title="גרף של פונקציה קווית או ריבועית"><i data-i="graph"></i><span>גרף פונקציה</span></button>
+        </div>
+        <div class="rgroup-label">מתמטיקה</div>
+      </div>
+      <div class="rgroup">
+        <div class="rgroup-body">
+          <button class="bigbtn" data-cmd="footnote" title="הערת שוליים ממוספרת"><i data-i="footnote"></i><span>הערת שוליים</span></button>
+          <button class="bigbtn" data-cmd="source" title="הוספת מקור לרשימת המקורות"><i data-i="book"></i><span>מקור</span></button>
+        </div>
+        <div class="rgroup-label">הפניות</div>
+      </div>
+      <div class="rgroup">
+        <div class="rgroup-body">
+          <button class="bigbtn" data-cmd="importLesson" title="ייבוא שיעור מקובץ הגיבוי של שולחן הלימודים"><i data-i="notebook"></i><span>ייבוא שיעור</span></button>
+        </div>
+        <div class="rgroup-label">שולחן הלימודים</div>
+      </div>
+    </div>
+
+    <!-- AIDS (accessibility) -->
+    <div class="rpanel" data-panel="aids">
+      <div class="rgroup">
+        <div class="rgroup-body">
+          <button class="bigbtn dictate-btn" data-cmd="dictate" title="הכתבה קולית. דורשת חיבור לאינטרנט: הדפדפן שולח את הקול לשרת לזיהוי."><i data-i="mic"></i><span class="dictate-label">הכתבה</span></button>
+          <button class="bigbtn" data-cmd="speak" id="speakBtn" title="הקראה מהסמן או מהטקסט המסומן"><i data-i="speaker"></i><span id="speakLabel">הקראה</span></button>
+          <button class="bigbtn" data-cmd="toggleReading" data-xstate="reading" title="אותיות גדולות, רווחים נוחים ופס שעוקב אחרי השורה"><i data-i="bookOpen"></i><span>מצב קריאה</span></button>
+        </div>
+        <div class="rgroup-label">קול וקריאה</div>
+      </div>
+      <div class="rgroup">
+        <div class="rgroup-body">
+          <button class="bigbtn" data-cmd="abbreviations" title="קיצורים שמתרחבים לבד ותיקון אוטומטי של שגיאות שחוזרות"><i data-i="wand"></i><span>קיצורים ותיקונים</span></button>
+          <button class="bigbtn" data-cmd="dictionary" title="מילים שלא יסומנו כשגיאה"><i data-i="dictionary"></i><span>מילון אישי</span></button>
+          <button class="bigbtn" data-cmd="wordCount" title="ספירת מילים ויעד מילים למסמך"><i data-i="target"></i><span>יעד מילים</span></button>
+        </div>
+        <div class="rgroup-label">כתיבה</div>
+      </div>
+      <div class="rgroup">
+        <div class="rgroup-body">
+          <button class="bigbtn" data-cmd="versions" title="גרסאות קודמות של המסמך, נשמרות כל 10 דקות של עבודה"><i data-i="history"></i><span>גרסאות קודמות</span></button>
+          <button class="bigbtn" data-cmd="settings" title="הפעלה וכיבוי של העזרים"><i data-i="settings"></i><span>הגדרות</span></button>
+        </div>
+        <div class="rgroup-label">מסמך</div>
+      </div>
+    </div>
+
+    <!-- LAYOUT -->
+    <div class="rpanel" data-panel="layout">
+      <div class="rgroup">
+        <div class="rgroup-body">
+          <button class="bigbtn" data-pop="margins"><i data-i="margins"></i><span>שוליים</span></button>
+          <button class="bigbtn" data-pop="orientation"><i data-i="orientation"></i><span>כיוון הדף</span></button>
+        </div>
+        <div class="rgroup-label">הגדרת עמוד</div>
+      </div>
+      <div class="rgroup">
+        <div class="rgroup-body">
+          <div class="rcol">
+            <label class="field-row"><span>כותרת עליונה</span><input id="headerText" class="rinput wide-input" type="text" maxlength="120" aria-label="כותרת עליונה"></label>
+            <label class="field-row"><span>כותרת תחתונה</span><input id="footerText" class="rinput wide-input" type="text" maxlength="120" aria-label="כותרת תחתונה"></label>
+          </div>
+          <div class="rcol">
+            <label class="switch-row"><input type="checkbox" id="pageNumbers"><span class="switch"></span><span>מספרי עמודים</span></label>
+            <label class="switch-row"><input type="checkbox" id="numberFirst"><span class="switch"></span><span>מספר גם בעמוד הראשון</span></label>
+          </div>
+        </div>
+        <div class="rgroup-label">כותרות ומספור</div>
+      </div>
+      <div class="rgroup">
+        <div class="rgroup-body">
+          <div class="rcol">
+            <button class="tbtn tbtn-label" data-cmd="dirRtl" data-state="dir-rtl"><i data-i="pilcrowRtl"></i><span>מימין לשמאל</span></button>
+            <button class="tbtn tbtn-label" data-cmd="dirLtr" data-state="dir-ltr"><i data-i="pilcrowLtr"></i><span>משמאל לימין</span></button>
+          </div>
+          <button class="bigbtn" data-pop="lineSpacing"><i data-i="lineSpacing"></i><span>ריווח שורות</span></button>
+        </div>
+        <div class="rgroup-label">פסקה</div>
+      </div>
+    </div>
+
+    <!-- VIEW -->
+    <div class="rpanel" data-panel="view">
+      <div class="rgroup">
+        <div class="rgroup-body">
+          <button class="bigbtn" data-cmd="toggleOutline" data-state="outline"><i data-i="sidebar"></i><span>חלונית ניווט</span></button>
+          <button class="bigbtn" data-cmd="toggleFocus"><i data-i="focus"></i><span>מצב מיקוד</span></button>
+          <button class="bigbtn" data-cmd="toggleTheme"><i data-i="moon" class="only-light"></i><i data-i="sun" class="only-dark"></i><span class="only-light">מצב כהה</span><span class="only-dark">מצב בהיר</span></button>
+        </div>
+        <div class="rgroup-label">תצוגה</div>
+      </div>
+      <div class="rgroup m-hide">
+        <div class="rgroup-body">
+          <button class="bigbtn" data-cmd="zoomOut"><i data-i="zoomOut"></i><span>הקטנה</span></button>
+          <button class="bigbtn" data-cmd="zoom100"><i data-i="zoomReset"></i><span>100%</span></button>
+          <button class="bigbtn" data-cmd="zoomIn"><i data-i="zoomIn"></i><span>הגדלה</span></button>
+          <button class="bigbtn" data-cmd="zoomFit"><i data-i="fitWidth"></i><span>רוחב הדף</span></button>
+        </div>
+        <div class="rgroup-label">זום</div>
+      </div>
+      <div class="rgroup">
+        <div class="rgroup-body">
+          <button class="bigbtn" data-cmd="toggleSpell" data-state="spell"><i data-i="spell"></i><span>בדיקת איות</span></button>
+          <button class="bigbtn" data-cmd="wordCount"><i data-i="hash"></i><span>ספירת מילים</span></button>
+          <button class="bigbtn" data-cmd="toggleReading" data-xstate="reading"><i data-i="bookOpen"></i><span>מצב קריאה</span></button>
+        </div>
+        <div class="rgroup-label">כלים</div>
+      </div>
+    </div>
+
+    <!-- TABLE (contextual) -->
+    <div class="rpanel" data-panel="table">
+      <div class="rgroup">
+        <div class="rgroup-body">
+          <div class="rcol">
+            <button class="tbtn tbtn-label" data-cmd="rowAbove"><i data-i="rowAbove"></i><span>שורה מעל</span></button>
+            <button class="tbtn tbtn-label" data-cmd="rowBelow"><i data-i="rowBelow"></i><span>שורה מתחת</span></button>
+          </div>
+          <div class="rcol">
+            <button class="tbtn tbtn-label" data-cmd="colRight"><i data-i="colRight"></i><span>עמודה מימין</span></button>
+            <button class="tbtn tbtn-label" data-cmd="colLeft"><i data-i="colLeft"></i><span>עמודה משמאל</span></button>
+          </div>
+        </div>
+        <div class="rgroup-label">הוספה</div>
+      </div>
+      <div class="rgroup">
+        <div class="rgroup-body">
+          <div class="rcol">
+            <button class="tbtn tbtn-label" data-cmd="deleteRow"><i data-i="rowDelete"></i><span>מחיקת שורה</span></button>
+            <button class="tbtn tbtn-label" data-cmd="deleteCol"><i data-i="colDelete"></i><span>מחיקת עמודה</span></button>
+          </div>
+          <button class="bigbtn danger" data-cmd="deleteTable"><i data-i="trash"></i><span>מחיקת טבלה</span></button>
+        </div>
+        <div class="rgroup-label">מחיקה</div>
+      </div>
+      <div class="rgroup">
+        <div class="rgroup-body">
+          <button class="bigbtn" data-cmd="toggleHeaderRow" data-state="headerRow"><i data-i="tableHeader"></i><span>שורת כותרת</span></button>
+          <button class="bigbtn" data-pop="cellShade"><i data-i="paintBucket"></i><span>צבע תא</span></button>
+        </div>
+        <div class="rgroup-label">עיצוב</div>
+      </div>
+    </div>
+
+    <!-- IMAGE (contextual) -->
+    <div class="rpanel" data-panel="image">
+      <div class="rgroup">
+        <div class="rgroup-body">
+          <button class="bigbtn" data-cmd="imgSize" data-arg="25"><span class="pct">25%</span><span>קטנה</span></button>
+          <button class="bigbtn" data-cmd="imgSize" data-arg="50"><span class="pct">50%</span><span>בינונית</span></button>
+          <button class="bigbtn" data-cmd="imgSize" data-arg="75"><span class="pct">75%</span><span>גדולה</span></button>
+          <button class="bigbtn" data-cmd="imgSize" data-arg="100"><span class="pct">100%</span><span>רוחב מלא</span></button>
+        </div>
+        <div class="rgroup-label">גודל</div>
+      </div>
+      <div class="rgroup">
+        <div class="rgroup-body">
+          <button class="bigbtn" data-cmd="alignRight"><i data-i="alignRight"></i><span>ימין</span></button>
+          <button class="bigbtn" data-cmd="alignCenter"><i data-i="alignCenter"></i><span>מרכז</span></button>
+          <button class="bigbtn" data-cmd="alignLeft"><i data-i="alignLeft"></i><span>שמאל</span></button>
+        </div>
+        <div class="rgroup-label">מיקום</div>
+      </div>
+      <div class="rgroup" id="objEditGroup" hidden>
+        <div class="rgroup-body">
+          <button class="bigbtn" data-cmd="editObject"><i data-i="pencil"></i><span id="objEditLabel">עריכה</span></button>
+        </div>
+        <div class="rgroup-label">עריכה</div>
+      </div>
+      <div class="rgroup">
+        <div class="rgroup-body">
+          <button class="bigbtn danger" data-cmd="deleteImage"><i data-i="trash"></i><span>מחיקת תמונה</span></button>
+        </div>
+        <div class="rgroup-label">פעולות</div>
+      </div>
+    </div>
+  </section>
+  </div>
+
+  <!-- Workspace -->
+  <main class="workspace">
+    <aside class="outline" id="outline" hidden>
+      <div class="outline-head"><span>ניווט</span><button class="icon-btn sm" data-cmd="toggleOutline" aria-label="סגירת חלונית הניווט"><i data-i="x"></i></button></div>
+      <div class="outline-list" id="outlineList"></div>
+      <div class="outline-empty" id="outlineEmpty">כותרות שתוסיף למסמך יופיעו כאן לניווט מהיר.</div>
+    </aside>
+
+    <div class="canvas" id="canvas">
+      <div class="find-panel" id="findPanel" hidden>
+        <div class="find-row">
+          <i data-i="search" class="find-ico"></i>
+          <input id="findInput" type="text" placeholder="חיפוש במסמך" aria-label="חיפוש" autocomplete="off" spellcheck="false">
+          <span class="find-count" id="findCount"></span>
+          <button class="icon-btn sm" data-cmd="findPrev" title="הקודם (Shift+Enter)" aria-label="הקודם"><i data-i="chevronUp"></i></button>
+          <button class="icon-btn sm" data-cmd="findNext" title="הבא (Enter)" aria-label="הבא"><i data-i="chevronDown"></i></button>
+          <button class="icon-btn sm" data-cmd="toggleReplaceRow" title="החלפה" aria-label="הצגת החלפה"><i data-i="replace"></i></button>
+          <button class="icon-btn sm" data-cmd="closeFind" title="סגירה (Esc)" aria-label="סגירת חיפוש"><i data-i="x"></i></button>
+        </div>
+        <div class="find-row" id="replaceRow" hidden>
+          <i data-i="replace" class="find-ico"></i>
+          <input id="replaceInput" type="text" placeholder="החלפה ב..." aria-label="החלפה ב" autocomplete="off" spellcheck="false">
+          <button class="text-btn" data-cmd="replaceOne">החלף</button>
+          <button class="text-btn" data-cmd="replaceAll">החלף הכל</button>
+        </div>
+      </div>
+
+      <div class="zoom-sizer" id="zoomSizer">
+        <div class="page-wrap" id="pageWrap">
+          <div class="pages-layer" id="pagesLayer" aria-hidden="true"></div>
+          <div class="editor" id="editor" contenteditable="true" spellcheck="true" lang="he" dir="rtl" role="textbox" aria-multiline="true" aria-label="גוף המסמך"></div>
+          <div class="img-overlay" id="imgOverlay" hidden>
+            <span class="ih nw" data-h="nw"></span><span class="ih ne" data-h="ne"></span>
+            <span class="ih sw" data-h="sw"></span><span class="ih se" data-h="se"></span>
+            <span class="img-size-tip" id="imgSizeTip"></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Phone formatting bar -->
+  <nav class="mbar m-only" id="mbar" aria-label="סרגל עיצוב">
+    <div class="mbar-scroll">
+      <button class="tbtn m-ctx" id="mTableBtn" data-cmd="mMore" data-arg="table" hidden title="כלי טבלה" aria-label="כלי טבלה"><i data-i="table"></i></button>
+      <button class="tbtn m-ctx" id="mImageBtn" data-cmd="mMore" data-arg="image" hidden title="כלי תמונה" aria-label="כלי תמונה"><i data-i="image"></i></button>
+      <button class="tbtn" data-cmd="bold" data-state="bold" aria-label="מודגש" title="מודגש"><i data-i="bold"></i></button>
+      <button class="tbtn" data-cmd="italic" data-state="italic" aria-label="נטוי" title="נטוי"><i data-i="italic"></i></button>
+      <button class="tbtn" data-cmd="underline" data-state="underline" aria-label="קו תחתון" title="קו תחתון"><i data-i="underline"></i></button>
+      <button class="tbtn" data-pop="mblock" aria-label="כותרת וסגנון" title="כותרת וסגנון"><i data-i="heading"></i></button>
+      <button class="tbtn" data-cmd="bulletList" data-state="insertUnorderedList" aria-label="תבליטים" title="תבליטים"><i data-i="listBullet"></i></button>
+      <button class="tbtn" data-cmd="numberList" data-state="insertOrderedList" aria-label="מספור" title="מספור"><i data-i="listNumber"></i></button>
+      <button class="tbtn" data-pop="malign" aria-label="יישור" title="יישור"><i data-i="alignJustify"></i></button>
+      <button class="tbtn dictate-btn" data-cmd="dictate" aria-label="הכתבה קולית" title="הכתבה קולית (דורשת אינטרנט)"><i data-i="mic"></i></button>
+      <button class="tbtn m-speak" data-cmd="speak" aria-label="הקראה" title="הקראה"><i data-i="speaker"></i></button>
+    </div>
+    <button class="tbtn mbar-more" data-cmd="mMore" aria-label="עוד כלים" title="עוד כלים"><i data-i="more"></i></button>
+  </nav>
+
+  <!-- Status bar -->
+  <footer class="statusbar">
+    <div class="sb-start">
+      <span id="sbPage">עמוד 1 מתוך 1</span>
+      <button class="sb-btn sb-words" data-cmd="wordCount" id="sbWords" title="ספירת מילים ויעד מילים"><span id="sbWordsLabel">0 מילים</span><span class="goal-bar" id="sbGoal" hidden><span></span></span></button>
+      <span id="sbRec" class="sb-rec" hidden><span class="rec-dot"></span>מקליט</span>
+      <span id="sbDir" class="sb-dim"></span>
+    </div>
+    <div class="sb-end">
+      <span id="sbOffline" class="sb-warn" hidden>אין חיבור לאינטרנט: הקלדה ושמירה ממשיכות לעבוד</span>
+      <button class="icon-btn sm" data-cmd="zoomOut" aria-label="הקטנת זום"><i data-i="minus"></i></button>
+      <input type="range" id="zoomRange" min="50" max="200" step="10" aria-label="זום">
+      <button class="icon-btn sm" data-cmd="zoomIn" aria-label="הגדלת זום"><i data-i="plus"></i></button>
+      <button class="sb-btn zoom-val" data-cmd="zoom100" id="zoomVal">100%</button>
+    </div>
+  </footer>
+</div>
+
+<!-- Backstage / start screen -->
+<div class="backstage" id="backstage" hidden>
+  <header class="bs-appbar m-only">
+    <button class="icon-btn" data-cmd="mDrawer" aria-label="תפריט" title="תפריט"><i data-i="menu"></i></button>
+    <span class="bs-ab-title"><span class="brand" aria-hidden="true"><i data-i="feather"></i></span><span>כתבן 2.0</span></span>
+    <button class="text-btn bs-ab-doc" data-cmd="closeBackstage" aria-label="חזרה למסמך" title="חזרה למסמך"><span>למסמך</span><i data-i="arrowLeft"></i></button>
+  </header>
+  <aside class="bs-nav">
+    <button class="bs-back" data-cmd="closeBackstage" id="bsBack"><i data-i="arrowRight"></i><span>חזרה למסמך</span></button>
+    <div class="bs-brand"><span class="brand"><i data-i="feather"></i></span><span>כתבן 2.0</span></div>
+    <button class="bs-item" data-cmd="newDoc"><i data-i="filePlus"></i><span>מסמך חדש</span></button>
+    <button class="bs-item" data-cmd="openFile"><i data-i="folderOpen"></i><span>פתיחת קובץ</span></button>
+    <div class="bs-divider doc-only"></div>
+    <button class="bs-item doc-only" data-cmd="saveDocx"><i data-i="fileWord"></i><span>שמירה כ-Word</span></button>
+    <button class="bs-item doc-only" data-cmd="exportPdf" id="pdfBtn"><i data-i="filePdf"></i><span>ייצוא ל-PDF</span></button>
+    <button class="bs-item doc-only" data-cmd="saveNative"><i data-i="fileCode"></i><span>שמירה כקובץ כתבן</span></button>
+    <button class="bs-item doc-only" data-cmd="print"><i data-i="printer"></i><span>הדפסה</span></button>
+    <div class="bs-foot">המסמכים נשמרים אוטומטית בדפדפן הזה. לגיבוי או להגשה, שמור קובץ למחשב.</div>
+  </aside>
+  <div class="bs-main">
+    <h1 class="bs-title" id="bsGreeting">שלום</h1>
+    <h2 class="bs-h">התחלה</h2>
+    <div class="tpl-row">
+      <button class="tpl-card" data-cmd="newDoc">
+        <span class="tpl-thumb blank"></span>
+        <span class="tpl-name">מסמך ריק</span>
+      </button>
+      <button class="tpl-card" data-cmd="newFromTemplate" data-arg="school">
+        <span class="tpl-thumb school"><span class="tt-l w60 c"></span><span class="tt-l w40 c"></span><span class="tt-gap"></span><span class="tt-l w30 c s"></span><span class="tt-l w30 c s"></span><span class="tt-l w30 c s"></span></span>
+        <span class="tpl-name">עבודה לבית ספר עם שער</span>
+      </button>
+      <button class="tpl-card" data-cmd="newFromTemplate" data-arg="letter">
+        <span class="tpl-thumb letter"><span class="tt-l w30 e s"></span><span class="tt-l w40 s"></span><span class="tt-gap"></span><span class="tt-l w90"></span><span class="tt-l w90"></span><span class="tt-l w70"></span><span class="tt-gap"></span><span class="tt-l w30 s"></span></span>
+        <span class="tpl-name">מכתב</span>
+      </button>
+      <button class="tpl-card" data-cmd="newFromTemplate" data-arg="tanach">
+        <span class="tpl-thumb subj"><span class="tt-l w30 s h"></span><span class="tt-l w90 q"></span><span class="tt-l w70 q"></span><span class="tt-gap"></span><span class="tt-l w30 s h"></span><span class="tt-l w90"></span><span class="tt-l w70"></span><span class="tt-gap"></span><span class="tt-l w30 s h"></span><span class="tt-l w60"></span></span>
+        <span class="tpl-name">תנ״ך: פסוק, פירוש ושאלות</span>
+      </button>
+      <button class="tpl-card" data-cmd="newFromTemplate" data-arg="history">
+        <span class="tpl-thumb subj"><span class="tt-l w30 s h"></span><span class="tt-l w90"></span><span class="tt-l w30 s h"></span><span class="tt-l w90"></span><span class="tt-l w70"></span><span class="tt-gap"></span><span class="tt-l w30 s h"></span><span class="tt-grid"></span></span>
+        <span class="tpl-name">היסטוריה: שאלה, תשובה וציר זמן</span>
+      </button>
+      <button class="tpl-card" data-cmd="newFromTemplate" data-arg="science">
+        <span class="tpl-thumb subj"><span class="tt-l w60 c"></span><span class="tt-l w30 s h"></span><span class="tt-l w90"></span><span class="tt-l w30 s h"></span><span class="tt-l w70"></span><span class="tt-l w30 s h"></span><span class="tt-l w90"></span><span class="tt-l w30 s h"></span><span class="tt-l w60"></span></span>
+        <span class="tpl-name">מדעים: דוח מעבדה</span>
+      </button>
+      <button class="tpl-card" data-cmd="openFile">
+        <span class="tpl-thumb open"><i data-i="folderOpen"></i></span>
+        <span class="tpl-name">פתיחת קובץ מהמחשב</span>
+      </button>
+    </div>
+    <h2 class="bs-h">מסמכים אחרונים</h2>
+    <div class="recent-list" id="recentList"></div>
+    <div class="recent-empty" id="recentEmpty">עדיין אין מסמכים. מסמך שתתחיל לכתוב יישמר כאן אוטומטית.</div>
+  </div>
+</div>
+
+<!-- Popovers -->
+<div class="popover" id="pop-sizes" data-popid="sizes"></div>
+<div class="popover" id="pop-textColor" data-popid="textColor"></div>
+<div class="popover" id="pop-highlight" data-popid="highlight"></div>
+<div class="popover" id="pop-cellShade" data-popid="cellShade"></div>
+<div class="popover" id="pop-lineSpacing" data-popid="lineSpacing"></div>
+<div class="popover" id="pop-tableGrid" data-popid="tableGrid">
+  <div class="tg-grid" id="tgGrid"></div>
+  <div class="tg-label" id="tgLabel">טבלה</div>
+</div>
+<div class="popover" id="pop-symbols" data-popid="symbols"></div>
+<div class="popover" id="pop-dates" data-popid="dates"></div>
+<div class="popover" id="pop-margins" data-popid="margins"></div>
+<div class="popover" id="pop-orientation" data-popid="orientation"></div>
+<div class="popover" id="pop-mblock" data-popid="mblock">
+  <div class="pop-title">סגנון הפסקה</div>
+  <button class="menu-item m-style" data-block="p" data-state="block-p"><span class="sc-normal">רגיל</span></button>
+  <button class="menu-item m-style" data-block="h1" data-state="block-h1"><span class="sc-h1">כותרת 1</span></button>
+  <button class="menu-item m-style" data-block="h2" data-state="block-h2"><span class="sc-h2">כותרת 2</span></button>
+  <button class="menu-item m-style" data-block="h3" data-state="block-h3"><span class="sc-h3">כותרת 3</span></button>
+  <button class="menu-item m-style" data-block="blockquote" data-state="block-blockquote"><span class="sc-quote">ציטוט</span></button>
+</div>
+<div class="popover" id="pop-malign" data-popid="malign">
+  <div class="pop-title">יישור וכיוון</div>
+  <button class="menu-item" data-cmd="alignRight" data-state="align-right"><i data-i="alignRight"></i><span>יישור לימין</span></button>
+  <button class="menu-item" data-cmd="alignCenter" data-state="align-center"><i data-i="alignCenter"></i><span>מרכוז</span></button>
+  <button class="menu-item" data-cmd="alignLeft" data-state="align-left"><i data-i="alignLeft"></i><span>יישור לשמאל</span></button>
+  <button class="menu-item" data-cmd="alignJustify" data-state="align-justify"><i data-i="alignJustify"></i><span>יישור לשני הצדדים</span></button>
+  <button class="menu-item" data-cmd="dirRtl" data-state="dir-rtl"><i data-i="pilcrowRtl"></i><span>פסקה מימין לשמאל</span></button>
+  <button class="menu-item" data-cmd="dirLtr" data-state="dir-ltr"><i data-i="pilcrowLtr"></i><span>פסקה משמאל לימין</span></button>
+</div>
+
+<!-- Phone menu drawer -->
+<div class="m-scrim m-only" id="mScrim"></div>
+<aside class="m-drawer m-only" id="mDrawer" aria-label="תפריט">
+  <div class="md-head">
+    <span class="bs-ab-title"><span class="brand" aria-hidden="true"><i data-i="feather"></i></span><span>כתבן 2.0</span></span>
+    <button class="icon-btn" data-cmd="mDrawer" aria-label="סגירת התפריט" title="סגירה"><i data-i="x"></i></button>
+  </div>
+  <button class="md-item" data-cmd="openBackstage"><i data-i="file"></i><span>המסמכים שלי</span></button>
+  <button class="md-item" data-cmd="newDoc"><i data-i="filePlus"></i><span>מסמך חדש</span></button>
+  <button class="md-item" data-cmd="openFile"><i data-i="folderOpen"></i><span>פתיחת קובץ</span></button>
+  <div class="md-sep"></div>
+  <button class="md-item" data-cmd="saveDocx"><i data-i="fileWord"></i><span>שמירה כ-Word</span></button>
+  <button class="md-item" data-cmd="exportPdf"><i data-i="filePdf"></i><span>ייצוא ל-PDF</span></button>
+  <button class="md-item" data-cmd="saveNative"><i data-i="fileCode"></i><span>שמירה כקובץ כתבן</span></button>
+  <button class="md-item" data-cmd="print"><i data-i="printer"></i><span>הדפסה</span></button>
+  <div class="md-sep"></div>
+  <button class="md-item" data-cmd="toggleOutline"><i data-i="sidebar"></i><span>ניווט בכותרות</span></button>
+  <button class="md-item" data-cmd="find"><i data-i="search"></i><span>חיפוש והחלפה</span></button>
+  <button class="md-item" data-cmd="wordCount"><i data-i="target"></i><span>ספירת מילים ויעד</span></button>
+  <button class="md-item" data-cmd="toggleTheme"><i data-i="moon" class="only-light"></i><i data-i="sun" class="only-dark"></i><span class="only-light">מצב כהה</span><span class="only-dark">מצב בהיר</span></button>
+  <button class="md-item" data-cmd="settings"><i data-i="settings"></i><span>הגדרות העזרים</span></button>
+  <div class="md-foot">המסמכים נשמרים אוטומטית בדפדפן הזה. לגיבוי או להגשה, שמור קובץ.</div>
+</aside>
+
+<!-- Modal -->
+<div class="modal-back" id="modalBack" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <h3 id="modalTitle"></h3>
+    <div class="modal-body" id="modalBody"></div>
+    <div class="modal-actions" id="modalActions"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<input type="file" id="fileOpen" accept=".docx,.html,.htm,.txt,.ktv" hidden>
+<input type="file" id="imageOpen" accept="image/*" hidden>
+<input type="file" id="lessonOpen" accept="application/json,.json" hidden>
+
+<div class="complete-pop" id="completePop" role="listbox" aria-label="השלמת מילים" hidden></div>
+<div class="ctx-menu" id="ctxMenu" role="menu" hidden></div>
+<div class="speech-bar" id="speechBar" hidden>
+  <button class="icon-btn sm" id="speechPause" title="השהיה" aria-label="השהיה"><i data-i="pause"></i></button>
+  <button class="icon-btn sm" id="speechStop" title="עצירה" aria-label="עצירת ההקראה"><i data-i="stop"></i></button>
+  <label class="speech-rate"><span>מהירות</span><input type="range" id="speechRate" min="0.5" max="1.8" step="0.1" aria-label="מהירות ההקראה"><bdi id="speechRateVal" dir="ltr"></bdi></label>
+</div>
+<div class="dictate-bar" id="dictateBar" hidden>
+  <span class="rec-dot"></span><span class="dictate-text" id="dictateText">מקשיב…</span>
+  <button class="text-btn" data-cmd="dictate">עצירה</button>
+</div>
+
+<script src="js/icons.js"></script>
+<script src="js/docx-export.js"></script>
+<script src="js/extras.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
