@@ -582,6 +582,11 @@
         f.querySelectorAll('[style*="font-size"]').forEach(function (d) { d.style.fontSize = ''; });
       }
     });
+    /* with a bare caret the size-7 marker is only a typing style; Chrome writes it on the next keystroke
+       as font-size:xxx-large (CSS mode is back on by then), so map that to the requested size too */
+    if (pendingFontSize) editor.querySelectorAll('font[style*="xxx-large"], span[style*="xxx-large"]').forEach(function (f) {
+      f.style.fontSize = pendingFontSize + 'pt';
+    });
   }
 
   /* =========================================================
