@@ -1738,7 +1738,7 @@
       function bridge() {
         var ctl = window.AbortController ? new AbortController() : null;
         var timer = ctl ? setTimeout(function () { ctl.abort(); }, 115000) : 0;
-        return fetch(SQ_BRIDGE, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: q, signal: ctl ? ctl.signal : undefined })
+        return fetch(SQ_BRIDGE, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: q, targetAddressSpace: 'loopback', signal: ctl ? ctl.signal : undefined })
           .then(function (r) { clearTimeout(timer); return r.ok ? r.text().then(function (t) { return { text: t }; }) : { text: '' }; },
             function () { clearTimeout(timer); return null; });
       }
