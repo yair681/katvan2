@@ -1698,6 +1698,7 @@
     var SQ_LS = 'ktv.sq';
     var SQ_KEY_RE = /^(AIza[\w-]{30,}|AQ\.[\w.-]{20,})$/;
     function sqKey() { try { return localStorage.getItem(SQ_LS) || ''; } catch (e) { return ''; } }
+    var SQ_BRIDGE = 'http://127.0.0.1:8799/ask';
     var SQ_URL = 'https://generativelanguage.googleapis.com/v1beta/models/';
     /* tried in order: the free tier caps each model per day (2.5-flash at 20), so a 429 moves on to the next one */
     var SQ_MODELS = [
@@ -1732,10 +1733,17 @@
         return;
       }
       var key = sqKey();
-      if (!key) return;
       sqBusy = true;
+      /* first the local bridge to the Claude session (katvan-bridge/server.js); if it isn't running, Gemini */
+      function bridge() {
+        var ctl = window.AbortController ? new AbortController() : null;
+        var timer = ctl ? setTimeout(function () { ctl.abort(); }, 115000) : 0;
+        return fetch(SQ_BRIDGE, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: q, signal: ctl ? ctl.signal : undefined })
+          .then(function (r) { clearTimeout(timer); return r.ok ? r.text().then(function (t) { return { text: t }; }) : { text: '' }; },
+            function () { clearTimeout(timer); return null; });
+      }
       function ask(i) {
-        if (i >= SQ_MODELS.length) return Promise.resolve(null);
+        if (!key || i >= SQ_MODELS.length) return Promise.resolve(null);
         var m = SQ_MODELS[i];
         var ctl = window.AbortController ? new AbortController() : null;
         var timer = ctl ? setTimeout(function () { ctl.abort(); }, 15000) : 0;
@@ -1751,9 +1759,14 @@
           return j && j.candidates ? j : ask(i + 1);
         });
       }
-      ask(0).then(function (j) {
-        var parts = j && j.candidates && j.candidates[0] && j.candidates[0].content && j.candidates[0].content.parts;
-        var text = parts ? parts.map(function (p) { return p.text || ''; }).join('') : '';
+      bridge().then(function (b) {
+        if (b) return b.text;
+        return ask(0).then(function (j) {
+          var parts = j && j.candidates && j.candidates[0] && j.candidates[0].content && j.candidates[0].content.parts;
+          return parts ? parts.map(function (p) { return p.text || ''; }).join('') : '';
+        });
+      }).then(function (text) {
+        text = text || '';
         text = text.replace(/\*\*|__|^#+\s*/gm, '').replace(/\s*\n\s*/g, ' ').trim();
         /* only replace if the question is still there, untouched */
         if (!text || !K.inEditor(range.commonAncestorContainer) || range.toString().trim() !== q) return;
