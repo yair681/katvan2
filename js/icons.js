@@ -35,6 +35,7 @@
     search: '<circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/>',
     replace: '<path d="M14 4h6v6h-6z"/><path d="M4 14h6v6H4z"/><path d="M17 14v3a3 3 0 0 1-3 3h-1M7 10V7a3 3 0 0 1 3-3h1"/><path d="m15 18-2 2 2 2M9 6l2-2-2-2"/>',
     table: '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/>',
+    camera: '<path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3.5"/>',
     image: '<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21"/>',
     link: '<path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/>',
     omega: '<path d="M4 20h4.5v-2.2A7 7 0 0 1 5 11.5 7 7 0 0 1 12 4.5a7 7 0 0 1 7 7 7 7 0 0 1-3.5 6.3V20H20"/>',

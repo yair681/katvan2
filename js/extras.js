@@ -1785,8 +1785,102 @@
       });
     }
 
+    /* ---------- scan a page with the webcam: insert it as an image, or read its text (Tesseract, loaded on demand) ---------- */
+    var OCR_URL = 'https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js';
+    var ocrLib = null;
+    function loadOcr() {
+      if (window.Tesseract) return Promise.resolve(window.Tesseract);
+      if (ocrLib) return ocrLib;
+      ocrLib = new Promise(function (resolve, reject) {
+        var s = document.createElement('script');
+        s.src = OCR_URL; s.async = true;
+        s.onload = function () { window.Tesseract ? resolve(window.Tesseract) : reject(new Error('OCR')); };
+        s.onerror = function () { ocrLib = null; s.remove(); reject(new Error('OCR')); };
+        document.head.appendChild(s);
+      });
+      return ocrLib;
+    }
+    function scanDialog() {
+      K.restoreSel();
+      var keep = K.currentRange() ? K.currentRange().cloneRange() : null;
+      var stream = null, shot = false, busy = false;
+      function msg(t) { var m = $('scanMsg'); if (m) m.textContent = t || ''; }
+      function stop() { if (stream) { stream.getTracks().forEach(function (t) { t.stop(); }); stream = null; } }
+      function btn(i) { return $('modalActions').children[i]; }
+      function capture() {
+        var v = $('scanVideo'), c = $('scanShot');
+        if (shot) { shot = false; c.hidden = true; v.hidden = false; btn(0).textContent = 'צילום'; msg(''); return false; }
+        if (!v.videoWidth) { msg('המצלמה עוד לא מוכנה.'); return false; }
+        var scale = Math.min(1, 1600 / v.videoWidth);
+        c.width = Math.round(v.videoWidth * scale); c.height = Math.round(v.videoHeight * scale);
+        c.getContext('2d').drawImage(v, 0, 0, c.width, c.height);
+        shot = true; c.hidden = false; v.hidden = true; btn(0).textContent = 'צילום חוזר';
+        msg('אפשר להכניס את הצילום כתמונה או לזהות את הטקסט שבו.');
+        return false;
+      }
+      function insert(html) {
+        stop();
+        K.closeModal();
+        if (keep) K.setSavedRange(keep);
+        K.act(function () { K.exec('insertHTML', html); });
+      }
+      function asImage() {
+        if (!shot || busy) { if (!shot) msg('קודם צלם את הדף.'); return false; }
+        var c = $('scanShot');
+        var w = Math.round(Math.min(c.width, K.contentWidth()));
+        insert('<img src="' + c.toDataURL('image/jpeg', 0.85) + '" style="width:' + w + 'px" alt="דף סרוק">');
+        return false;
+      }
+      function asText() {
+        if (!shot || busy) { if (!shot) msg('קודם צלם את הדף.'); return false; }
+        busy = true;
+        msg('מוריד את רכיב זיהוי הטקסט…');
+        loadOcr().then(function (T) {
+          msg('מזהה את הטקסט…');
+          return T.recognize($('scanShot'), 'heb+eng', { logger: function (m) { if (m.status === 'recognizing text') msg('מזהה את הטקסט… ' + Math.round(m.progress * 100) + '%'); } });
+        }).then(function (r) {
+          busy = false;
+          var text = (r && r.data && r.data.text || '').trim();
+          if (!text) { msg('לא נמצא טקסט בצילום. נסה תאורה טובה יותר והחזק את הדף קרוב וישר.'); return; }
+          var html = text.split(/\n\s*\n/).map(function (p) { return '<p>' + K.escHtml(p.replace(/\s*\n\s*/g, ' ').trim()) + '</p>'; }).join('');
+          insert(html);
+        }).catch(function () {
+          busy = false;
+          msg('זיהוי הטקסט דורש חיבור לאינטרנט בפעם הראשונה. אפשר להכניס את הצילום כתמונה.');
+        });
+        return false;
+      }
+      K.modal({
+        title: 'סריקה במצלמה',
+        wide: true,
+        body: '<div style="background:#000;border-radius:8px;overflow:hidden;text-align:center">' +
+          '<video id="scanVideo" autoplay playsinline muted style="max-width:100%;max-height:55vh;display:block;margin:auto"></video>' +
+          '<canvas id="scanShot" hidden style="max-width:100%;max-height:55vh;display:block;margin:auto"></canvas></div>' +
+          '<div id="scanMsg" style="margin-top:8px;min-height:1.4em"></div>',
+        onOpen: function () {
+          if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { msg('הדפדפן הזה לא מאפשר גישה למצלמה.'); return; }
+          msg('מפעיל את המצלמה…');
+          navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment', width: { ideal: 1920 }, height: { ideal: 1080 } }, audio: false })
+            .then(function (s) {
+              if ($('modalBack').hidden) { s.getTracks().forEach(function (t) { t.stop(); }); return; }
+              stream = s; $('scanVideo').srcObject = s;
+              msg('החזק את הדף מול המצלמה, ישר וקרוב, ולחץ "צילום".');
+            })
+            .catch(function () { msg('אין גישה למצלמה. בדוק שהיא מחוברת ושאישרת ל-Chrome להשתמש בה.'); });
+        },
+        onClose: stop,
+        actions: [
+          { label: 'צילום', primary: true, run: capture },
+          { label: 'הכנסה כתמונה', run: asImage },
+          { label: 'הכנסה כטקסט', run: asText },
+          { label: 'ביטול' }
+        ]
+      });
+    }
+
     /* ---------- commands ---------- */
     var C = K.cmds;
+    C.scan = scanDialog;
     C.mathSpan = mathSpan;
     C.equation = function () { equationDialog(null); };
     C.solution = function () { insertSol(false); };
