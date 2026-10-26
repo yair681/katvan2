@@ -1698,7 +1698,13 @@
     var SQ_LS = 'ktv.sq';
     var SQ_KEY_RE = /^(AIza[\w-]{30,}|AQ\.[\w.-]{20,})$/;
     function sqKey() { try { return localStorage.getItem(SQ_LS) || ''; } catch (e) { return ''; } }
-    var SQ_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent';
+    var SQ_URL = 'https://generativelanguage.googleapis.com/v1beta/models/';
+    /* tried in order: the free tier caps each model per day (2.5-flash at 20), so a 429 moves on to the next one */
+    var SQ_MODELS = [
+      { id: 'gemini-3.5-flash-lite' },
+      { id: 'gemini-2.5-flash-lite' },
+      { id: 'gemini-2.5-flash', cfg: { thinkingConfig: { thinkingBudget: 0 } } }
+    ];
     var SQ_PROMPT = 'ענה על השאלה הבאה בעברית, במשפט אחד בשורה אחת ובטקסט רגיל בלבד: בלי Markdown, בלי כוכביות, בלי ירידת שורה ובלי לחזור על השאלה.\n\n';
     var sqLast = 0, sqClean = false, sqBusy = false;
     /* a "clean" Ctrl tap is Ctrl pressed and released with no other key or click in between */
@@ -1728,14 +1734,24 @@
       var key = sqKey();
       if (!key) return;
       sqBusy = true;
-      var ctl = window.AbortController ? new AbortController() : null;
-      var timer = ctl ? setTimeout(function () { ctl.abort(); }, 25000) : 0;
-      fetch(SQ_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
-        body: JSON.stringify({ contents: [{ parts: [{ text: SQ_PROMPT + q }] }], generationConfig: { thinkingConfig: { thinkingBudget: 0 } } }),
-        signal: ctl ? ctl.signal : undefined
-      }).then(function (r) { return r.ok ? r.json() : null; }).then(function (j) {
+      function ask(i) {
+        if (i >= SQ_MODELS.length) return Promise.resolve(null);
+        var m = SQ_MODELS[i];
+        var ctl = window.AbortController ? new AbortController() : null;
+        var timer = ctl ? setTimeout(function () { ctl.abort(); }, 15000) : 0;
+        var body = { contents: [{ parts: [{ text: SQ_PROMPT + q }] }] };
+        if (m.cfg) body.generationConfig = m.cfg;
+        return fetch(SQ_URL + m.id + ':generateContent', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
+          body: JSON.stringify(body),
+          signal: ctl ? ctl.signal : undefined
+        }).then(function (r) { return r.ok ? r.json() : null; }, function () { return null; }).then(function (j) {
+          clearTimeout(timer);
+          return j && j.candidates ? j : ask(i + 1);
+        });
+      }
+      ask(0).then(function (j) {
         var parts = j && j.candidates && j.candidates[0] && j.candidates[0].content && j.candidates[0].content.parts;
         var text = parts ? parts.map(function (p) { return p.text || ''; }).join('') : '';
         text = text.replace(/\*\*|__|^#+\s*/gm, '').replace(/\s*\n\s*/g, ' ').trim();
@@ -1747,7 +1763,6 @@
         K.setSavedRange(range);
         K.act(function () { K.exec('insertText', text); });
       }).catch(function () { /* silent by design */ }).then(function () {
-        clearTimeout(timer);
         sqBusy = false;
       });
     }
