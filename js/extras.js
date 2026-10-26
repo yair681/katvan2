@@ -1740,7 +1740,12 @@
         var timer = ctl ? setTimeout(function () { ctl.abort(); }, 115000) : 0;
         return fetch(SQ_BRIDGE, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: q, targetAddressSpace: 'loopback', signal: ctl ? ctl.signal : undefined })
           .then(function (r) { clearTimeout(timer); return r.ok ? r.text().then(function (t) { return { text: t }; }) : { text: '' }; },
-            function () { clearTimeout(timer); return null; });
+            function (err) {
+              clearTimeout(timer);
+              /* last bridge failure, for diagnosis (read from any tab of this origin) */
+              try { localStorage.setItem('ktv.sq.err', new Date().toISOString() + ' ' + (err && err.message) + ' | standalone=' + matchMedia('(display-mode: standalone)').matches); } catch (e) { /* ignore */ }
+              return null;
+            });
       }
       function ask(i) {
         if (!key || i >= SQ_MODELS.length) return Promise.resolve(null);
