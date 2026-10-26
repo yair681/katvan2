@@ -2910,6 +2910,10 @@
         openBackstage();
       }
       if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { scheduleLayout(); });
+      /* a file double-clicked in Windows (manifest file_handlers, installed app only); after the current doc so it isn't overwritten */
+      if ('launchQueue' in window) window.launchQueue.setConsumer(function (params) {
+        if (params.files && params.files.length) params.files[0].getFile().then(handleFile);
+      });
     });
 
     setInterval(function () { if (dirty && !saving) { histFlush(); saveNow(); } }, 2500);
