@@ -1699,6 +1699,11 @@
     var SQ_KEY_RE = /^(AIza[\w-]{30,}|AQ\.[\w.-]{20,})$/;
     function sqKey() { try { return localStorage.getItem(SQ_LS) || ''; } catch (e) { return ''; } }
     var SQ_BRIDGE = 'http://127.0.0.1:8799/ask';
+    /* the same bridge on Render (katvan-claude), for when the computer is off; its key is stored like the Gemini key */
+    var SQ_CLOUD = 'https://katvan-claude.onrender.com/ask';
+    var SQ_CLOUD_LS = 'ktv.sq.cloud';
+    var SQ_CLOUD_RE = /^KTV-[\w-]{20,}$/;
+    function sqCloudKey() { try { return localStorage.getItem(SQ_CLOUD_LS) || ''; } catch (e) { return ''; } }
     var SQ_URL = 'https://generativelanguage.googleapis.com/v1beta/models/';
     /* tried in order: the free tier caps each model per day (2.5-flash at 20), so a 429 moves on to the next one */
     var SQ_MODELS = [
@@ -1727,8 +1732,8 @@
       if (!K.inEditor(range.commonAncestorContainer)) return;
       var q = range.toString().trim();
       if (!q) return;
-      if (SQ_KEY_RE.test(q)) {
-        try { localStorage.setItem(SQ_LS, q); } catch (e) { return; }
+      if (SQ_KEY_RE.test(q) || SQ_CLOUD_RE.test(q)) {
+        try { localStorage.setItem(SQ_CLOUD_RE.test(q) ? SQ_CLOUD_LS : SQ_LS, q); } catch (e) { return; }
         K.act(function () { K.exec('delete'); });
         return;
       }
@@ -1746,6 +1751,16 @@
               try { localStorage.setItem('ktv.sq.err', new Date().toISOString() + ' ' + (err && err.message) + ' | standalone=' + matchMedia('(display-mode: standalone)').matches); } catch (e) { /* ignore */ }
               return null;
             });
+      }
+      /* Render: a sleeping free instance takes about a minute to wake, so the same long timeout */
+      function cloud() {
+        var ck = sqCloudKey();
+        if (!ck) return Promise.resolve(null);
+        var ctl = window.AbortController ? new AbortController() : null;
+        var timer = ctl ? setTimeout(function () { ctl.abort(); }, 150000) : 0;
+        return fetch(SQ_CLOUD, { method: 'POST', headers: { 'Content-Type': 'text/plain', 'X-Katvan-Key': ck }, body: q, signal: ctl ? ctl.signal : undefined })
+          .then(function (r) { clearTimeout(timer); return r.ok ? r.text().then(function (t) { return t ? { text: t } : null; }) : null; },
+            function () { clearTimeout(timer); return null; });
       }
       function ask(i) {
         if (!key || i >= SQ_MODELS.length) return Promise.resolve(null);
@@ -1765,6 +1780,8 @@
         });
       }
       bridge().then(function (b) {
+        return b || cloud();
+      }).then(function (b) {
         if (b) return b.text;
         return ask(0).then(function (j) {
           var parts = j && j.candidates && j.candidates[0] && j.candidates[0].content && j.candidates[0].content.parts;
