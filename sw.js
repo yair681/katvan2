@@ -2,7 +2,7 @@
    Registered only over http(s) (see registerServiceWorker in js/app.js); file:// never uses it.
    Strategy: answer from the cache at once, refresh the cached copy in the background,
    so a new version arrives on the next start. Bump VERSION when the file list changes. */
-var VERSION = 'katvan2-v2'; /* own prefix: 2.0 shares the github.io origin with the original, whose cleanup deletes 'katvan-*' */
+var VERSION = 'katvan2-v3'; /* own prefix: 2.0 shares the github.io origin with the original, whose cleanup deletes 'katvan-*' */
 var ASSETS = [
   './',
   'index.html',

@@ -1744,7 +1744,8 @@
         var ctl = window.AbortController ? new AbortController() : null;
         var timer = ctl ? setTimeout(function () { ctl.abort(); }, 115000) : 0;
         return fetch(SQ_BRIDGE, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: q, targetAddressSpace: 'loopback', signal: ctl ? ctl.signal : undefined })
-          .then(function (r) { clearTimeout(timer); return r.ok ? r.text().then(function (t) { return { text: t }; }) : { text: '' }; },
+          /* not ok (504: nobody answered in the session) falls through to the cloud */
+          .then(function (r) { clearTimeout(timer); return r.ok ? r.text().then(function (t) { return t ? { text: t } : null; }) : null; },
             function (err) {
               clearTimeout(timer);
               /* last bridge failure, for diagnosis (read from any tab of this origin) */
